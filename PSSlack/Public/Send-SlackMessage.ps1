@@ -260,7 +260,7 @@ function Send-SlackMessage {
 
         $Channel,
 
-        $Thread_ts,
+        $Thread_ts="",
 
         [parameter(ParameterSetName = 'Param',
                    ValueFromPipelineByPropertyName = $True,

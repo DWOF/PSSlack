@@ -167,7 +167,7 @@
     Param
     (
         [string]$Channel,
-        [string]$Thread_ts,
+        [string]$Thread_ts="",
         [string]$Text,
         [string]$Username,
         [string]$IconUrl,

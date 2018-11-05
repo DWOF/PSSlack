@@ -13,6 +13,11 @@
     .PARAMETER Channel
         Channel, private group, or IM channel to send message to. Can be an encoded ID, or a name.
 
+    .PARAMETER Thread_ts
+        The identity of the conversation thread to respond in.
+
+        See message threading details: https://api.slack.com/docs/message-threading
+
     .PARAMETER Text
         Text of the message to send
 
@@ -162,6 +167,7 @@
     Param
     (
         [string]$Channel,
+        [string]$Thread_ts="",
         [string]$Text,
         [string]$Username,
         [string]$IconUrl,
@@ -204,7 +210,7 @@
             'channel'     { $body.channel      = $Channel}
             'text'        { $body.text         = $text}
             'username'    { $body.username     = $username}
-            'asuser'     { $body.as_user       = $AsUser}
+            'asuser'      { $body.as_user      = $AsUser}
             'iconurl'     { $body.icon_url     = $iconurl}
             'iconemoji'   { $body.icon_emoji   = $iconemoji}
             'linknames'   { $body.link_names   = 1}
@@ -212,7 +218,8 @@
             'UnfurlLinks' { $body.Unfurl_Links = $UnfurlLinks}
             'UnfurlMedia' { $body.Unfurl_Media = $UnfurlMedia}
             'iconurl'     { $body.icon_url     = $iconurl}
-            'attachments' { $body.attachments   = @($AllAttachments)}
+            'attachments' { $body.attachments  = @($AllAttachments)}
+            'thread_ts'   { $body.thread_ts    = $Thread_ts}
         }
 
         Add-ObjectDetail -InputObject $body -TypeName PSSlack.Message

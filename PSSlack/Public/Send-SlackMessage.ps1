@@ -34,6 +34,11 @@ function Send-SlackMessage {
     .PARAMETER Channel
         Channel, private group, or IM channel to send message to. Can be an encoded ID, or a name.
 
+    .PARAMETER Thread_ts
+        The identity of the conversation thread to respond in.
+
+        See message threading details: https://api.slack.com/docs/message-threading
+
     .PARAMETER Text
         Text of the message to send
 
@@ -255,6 +260,8 @@ function Send-SlackMessage {
 
         $Channel,
 
+        $Thread_ts="",
+
         [parameter(ParameterSetName = 'Param',
                    ValueFromPipelineByPropertyName = $True,
                    Position = 1)]
@@ -331,6 +338,7 @@ function Send-SlackMessage {
                 'UnfurlLinks' {$body.unfurl_links = $UnfurlLinks}
                 'UnfurlMedia' {$body.unfurl_media = $UnfurlMedia}
                 'attachments' {$body.attachments = $Attachments}
+                'thread_ts'   {$body.thread_ts    = $Thread_ts}
             }
             $Messages += $Body
         }

@@ -22,6 +22,11 @@
     .PARAMETER Channel
         Optional channel, private group, or IM channel to send file to. Can be an encoded ID, or a name.
 
+    .PARAMETER Thread_ts
+        The identity of the conversation thread to respond in.
+
+        See message threading details: https://api.slack.com/docs/message-threading
+
     .PARAMETER FileName
         Required filename for this file.  Used to determine syntax highlighting and other functionality.
 
@@ -62,6 +67,10 @@
     param (
         [string]$Token = $Script:PSSlack.Token,
 
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [string]$Proxy = $Script:PSSlack.Proxy,
+
         [parameter(ParameterSetName = 'Content',
                    Mandatory = $True)]
         [string]$Content,
@@ -75,12 +84,23 @@
         [string]$FileType,
 
         [string[]]$Channel,
+        [string]$Thread_ts = "",
+
         [string]$FileName,
         [String]$Title,
         [String]$Comment,
 
         [switch]$ForceVerbose = $Script:PSSlack.ForceVerbose
     )
+    begin
+    {
+        Write-Debug "Send-SlackMessage Bound parameters: $($PSBoundParameters | Remove-SensitiveData | Out-String)`nParameterSetName $($PSCmdlet.ParameterSetName)"
+        $ProxyParam = @{}
+        if($Proxy)
+        {
+            $ProxyParam.Proxy = $Proxy
+        }
+    }
     process
     {
         if ($Content) {
@@ -92,6 +112,7 @@
             'Title'       {$body.Title = $Title}
             'Comment'     {$body.initial_comment = $Comment}
             'FileType'    {$body.filetype = $FileType}
+            'Thread_ts'   {$body.thread_ts    = $Thread_ts}
             }
             Write-Verbose "Send-SlackApi -Body $($body | Format-List | Out-String)"
             $Params = @{
@@ -137,6 +158,14 @@
                         $channelContent.Headers.ContentDisposition = $channelHeader
                         $multipartContent.Add($channelContent)
                     }
+                    'Thread_ts' {
+                        # Add Thread Timestamp
+                        $ThreadHeader = [System.Net.Http.Headers.ContentDispositionHeaderValue]::new('form-data')
+                        $ThreadHeader.Name = 'thread_ts'
+                        $ThreadContent = [System.Net.Http.StringContent]::new($Thread_ts)
+                        $ThreadContent.Headers.ContentDisposition = $ThreadHeader
+                        $multipartContent.Add($ThreadContent)
+                    }
                     'FileName' {
                         # Add file name
                         $filenameHeader = [System.Net.Http.Headers.ContentDispositionHeaderValue]::new('form-data')
@@ -164,7 +193,7 @@
                 }
 
                 try {
-                    $response = Invoke-RestMethod -Uri $uri -Method Post -Body $multipartContent
+                    $response = Invoke-RestMethod @ProxyParam -Uri $uri -Method Post -Body $multipartContent
                 }
                 catch [System.Net.WebException] {
                     Write-Error( "Rest call failed for $uri`: $_" )
@@ -200,6 +229,11 @@
                                 "Content-Disposition: form-data; name=`"channels`"$LF" +
                                 "Content-Type: multipart/form-data$LF$LF" +
                                 ($Channel -join ", ") + $LF)}
+                'Thread_ts'     {$bodyLines +=
+                                ("--$boundary$LF" +
+                                "Content-Disposition: form-data; name=`"thread_ts`"$LF" +
+                                "Content-Type: multipart/form-data$LF$LF" +
+                                "$Thread_ts$LF")}
                 'FileName'    {$bodyLines +=
                                 ("--$boundary$LF" +
                                 "Content-Disposition: form-data; name=`"filename`"$LF" +
@@ -230,7 +264,7 @@
                     if($ForceVerbose) {
                         $Params.Add('Verbose', $true)
                     }
-                    $response = Invoke-RestMethod @Params
+                    $response = Invoke-RestMethod @ProxyParam @Params
                 }
                 catch [System.Net.WebException] {
                     Write-Error( "Rest call failed for $uri`: $_" )
